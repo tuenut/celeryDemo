@@ -5,6 +5,7 @@ As broker we use redis. In some purposes we use redis==3.2.0 for python.
 Also use loguru for logging.
 
 ## Instructions
+### Fisrst steps with Celery
 
 1) To run redis in docker execute:
 ```shell
@@ -35,3 +36,9 @@ False
 ```
 - Also if you don't enable _result backend_ you can't retrieve result from task 
 in that way.
+
+### Configuration
+There is some ways to configure celery. You can read more in documentation.
+
+We will use `celeryconfig.py`. So let's add some configuration in file and then 
+refactor our `tasks.py`.

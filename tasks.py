@@ -2,11 +2,8 @@ from celery import Celery
 from loguru import logger
 
 
-app = Celery(
-    'tasks',  # entry point module name
-    broker='redis://localhost',  # where celery send tasks, and where workers get it
-    backend='redis://localhost'  # where task results should store
-)
+app = Celery("tasks")
+app.config_from_object("celeryconfig")
 
 
 @app.task
