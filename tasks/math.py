@@ -1,50 +1,51 @@
 from loguru import logger
 
 from tasks.celery import app
+from libs.math import add, sub, mul, divide
 
 
-__all__ = ["add"]
+__all__ = ["add_request", "sub_request", "mul_request", "divide_request"]
 
 
 @app.task
-def add(x, y):
-    logger.debug(f"User request adding <{x}> to <{y}>.")
+def add_request(x, y):
+    logger.info(f"User request adding <{x}> to <{y}>.")
 
-    result = x + y
+    result = add(x, y)
 
-    logger.debug(f"Task solve request with result <{result}>.")
+    logger.info(f"Task solve request with result <{result}>.")
 
     return result
 
 
 @app.task
-def sub(x, y):
-    logger.debug(f"User request subtract <{y}> from <{x}>.")
+def sub_request(x, y):
+    logger.info(f"User request subtract <{y}> from <{x}>.")
 
-    result = x - y
+    result = sub(x, y)
 
-    logger.debug(f"Task solve request with result <{result}>.")
-
-    return result
-
-
-@app.task
-def mul(x, y):
-    logger.debug(f"User request multiply <{x}> by <{y}>.")
-
-    result = x * y
-
-    logger.debug(f"Task solve request with result <{result}>.")
+    logger.info(f"Task solve request with result <{result}>.")
 
     return result
 
 
 @app.task
-def divide(x, y):
-    logger.debug(f"User request divide <{x}> into <{y}>.")
+def mul_request(x, y):
+    logger.info(f"User request multiply <{x}> by <{y}>.")
 
-    result = x * y
+    result = mul(x, y)
 
-    logger.debug(f"Task solve request with result <{result}>.")
+    logger.info(f"Task solve request with result <{result}>.")
+
+    return result
+
+
+@app.task
+def divide_request(x, y):
+    logger.info(f"User request divide <{x}> into <{y}>.")
+
+    result = divide(x, y)
+
+    logger.info(f"Task solve request with result <{result}>.")
 
     return result
