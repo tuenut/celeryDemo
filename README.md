@@ -1,10 +1,10 @@
 # Celery demo project
 
 That project demonstrating setup, use and development with celery step by step.
+As broker we use redis. Also, we use loguru for logging. 
 
-As broker we use redis. Due some purposes we use redis==3.2.0 for python.
+Due to some purposes we use redis==3.2.0 and celery==4.4.6.
 
-Also, we use loguru for logging.
 
 ## Lessons
 
