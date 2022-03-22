@@ -1,10 +1,13 @@
 from loguru import logger
 
 from tasks.celery import app
-from libs.math import add, sub, mul, divide
+from libs.math import add, sub, mul, divide, xsum
 
 
-__all__ = ["add_request", "sub_request", "mul_request", "divide_request"]
+__all__ = [
+    "add_request", "sub_request", "mul_request", "divide_request",
+    "xsum_request"
+]
 
 
 @app.task
@@ -49,3 +52,16 @@ def divide_request(x, y):
     logger.info(f"Task solve request with result <{result}>.")
 
     return result
+
+
+@app.task
+def xsum_request(numbers):
+    logger.info(f"User request summarize <{numbers}>.")
+
+    result = xsum(numbers)
+
+    logger.info(f"Task solve request with result <{result}>.")
+
+    return result
+
+
