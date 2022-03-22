@@ -1,29 +1,12 @@
-# Celery demo project
-
-That project demonstrating setup, use and development with celery step by step.
-
-As broker we use redis. Due some purposes we use redis==3.2.0 for python.
-
-Also, we use loguru for logging.
-
-## Lessons
-
-### First steps
-- [First steps with Celery](lessons/01_first_steps.md)
-- [Configuration](lessons/02_configuration.md)
-- [Project tree](lessons/03_project_tree.md)
-- [Decomposing](lessons/04_decomposing.md)
-
-### Canvas: Designing Work-flows
 #### Signatures
 
-So, we can use signatures of tasks to pass tasks invocation to  another 
-process/application or as argument to another function.
+So, we can use signatures of tasks to pass tasks invocation to another process/application or as argument to another
+function.
 
-> A signature wraps the arguments and execution options of a single task 
-> invocation in such a way that it can be passed to functions or even serialized 
+> A signature wraps the arguments and execution options of a single task
+> invocation in such a way that it can be passed to functions or even serialized
 > and sent across the wire.
-> 
+>
 > -- <cite>Celery docs</cite>
 
 ```pycon
@@ -35,8 +18,7 @@ tasks.add_request(2, 2)
 tasks.add_request(2, 2)
 ```
 
-You can create signature with partial arguments and provide rest arguments after
-in place, like as currying function
+You can create signature with partial arguments and provide rest arguments after in place, like as currying function
 
 ```pycon
 # incomplete partial: add(?, 2)
@@ -47,14 +29,13 @@ in place, like as currying function
 >>> res.get()
 10
 ```
-Here you added the argument 8 that was prepended to the existing argument 2 
-forming a complete signature of add(8, 2).
+
+Here you added the argument 8 that was prepended to the existing argument 2 forming a complete signature of add(8, 2).
 
 #### Groups
 
-A group calls a list of tasks in parallel, and it returns a special result 
-instance that lets you inspect the results as a group, and retrieve the return 
-values in order.
+A group calls a list of tasks in parallel, and it returns a special result instance that lets you inspect the results as
+a group, and retrieve the return values in order.
 
 ```pycon
 >>> from celery import group
@@ -104,5 +85,5 @@ A chord is a group with a callback(which will apply to result of group):
 90
 ```
 
-Firstlty group of tasks will be executed and then list of it results will pass 
+First group of tasks will be executed and then list of it results will pass 
 to `xsum_request` callback.
