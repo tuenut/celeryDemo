@@ -1,20 +1,22 @@
 from loguru import logger
-
-from libs.imagecompress import compress_jpeg
 from tasks.celery import app
 
+from libs.weather import get_weather
 
-__all__ = ["compress_image"]
+
+__all__ = ["get_weather_today"]
 
 
 @app.task
-def compress_image(path_to_file: str):
-    logger.info(f"Run compress image task for file <{path_to_file}>.")
+def get_weather_today():
+    logger.info("Start receiving weather data.")
 
     try:
-        compress_jpeg(path_to_file)
+        weather = get_weather("today")
     except:
         logger.exception("Something goes wrong while task execution.")
         raise
     else:
         logger.info("Task completed")
+
+    return weather
