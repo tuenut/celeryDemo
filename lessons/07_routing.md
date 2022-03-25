@@ -26,3 +26,5 @@ First we make a few tasks for purposes described above.
 - `tasks.datahandle.compressimage.compress_image` - task emulates image 
 compression. Can randomly fail with `FileNotFound`.
 - `tasks.datasource.weather.get_weather_today` - task emulates weather request. 
+- `tasks.notification.slack.notify_user_in_slack` - task emulates send some 
+notification for user.

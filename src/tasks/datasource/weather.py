@@ -8,15 +8,15 @@ __all__ = ["get_weather_today"]
 
 
 @app.task
+@logger.catch(
+    reraise=True,
+    message="Something goes wrong while `get_weather_today` task execution."
+)
 def get_weather_today():
     logger.info("Start receiving weather data.")
 
-    try:
-        weather = get_weather("today")
-    except:
-        logger.exception("Something goes wrong while task execution.")
-        raise
-    else:
-        logger.info("Task completed")
+    weather = get_weather("today")
+
+    logger.info("Task completed")
 
     return weather
