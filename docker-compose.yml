@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+  redis:
+    image: redis:6.2-alpine
+  datahandle-workers:
+    image: celery.experiments:latest
+    build: ./
+    volumes:
+      - ./src/:/opt/app/
+    entrypoint: celery -A tasks worker --loglevel=info --workdir /opt/app/ -Q datahandle
+  datasource-workers:
+    image: celery.experiments:latest
+    build: ./
+    volumes:
+      - ./src/:/opt/app/
+    entrypoint: celery -A tasks worker --loglevel=info --workdir /opt/app/ -Q datasource
+  notification-workers:
+    image: celery.experiments:latest
+    build: ./
+    volumes:
+      - ./src/:/opt/app/
+    entrypoint: celery -A tasks worker --loglevel=info --workdir /opt/app/ -Q notification
+  default-queue:
+    image: celery.experiments:latest
+    build: ./
+    volumes:
+      - ./src/:/opt/app/
+    entrypoint: celery -A tasks worker --loglevel=info --workdir /opt/app/
