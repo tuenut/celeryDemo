@@ -28,3 +28,6 @@ compression. Can randomly fail with `FileNotFound`.
 - `tasks.datasource.weather.get_weather_today` - task emulates weather request. 
 - `tasks.notification.slack.notify_user_in_slack` - task emulates send some 
 notification for user.
+
+Now we should use `celeryconfig.py` to configure tasks routing to queues with 
+global pattern.
