@@ -17,3 +17,4 @@ Due to some purposes we use redis==3.2.0 and celery==4.4.6.
 ### Canvas: Designing Work-flows
 - [Signatures, Groups, Chains, Chords](lessons/06_primitives.md)
 - [Routing](lessons/07_routing.md)
+- [Django](lessons/08_django.md)
