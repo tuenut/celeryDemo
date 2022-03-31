@@ -24,7 +24,7 @@ def add_request(x, y):
 
 @shared_task
 def sub_request(x, y):
-    logger.info(f"User request subtract <{y}> from <{x}>.")
+    logger.info(f"User request subtract <{x}> from <{y}>.")
 
     result = sub(x, y)
 

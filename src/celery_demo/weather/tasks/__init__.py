@@ -1,13 +1,13 @@
+from celery import shared_task
 from loguru import logger
-from tasks.celery import app
 
-from libs.weather import get_weather
+from .utils import get_weather
 
 
 __all__ = ["get_weather_today"]
 
 
-@app.task
+@shared_task
 @logger.catch(
     reraise=True,
     message="Something goes wrong while `get_weather_today` task execution."

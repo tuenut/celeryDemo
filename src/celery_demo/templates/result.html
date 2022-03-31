@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sum task result</title>
+</head>
+<body>
+<h2>
+  Result of your request
+  <span style="color:blue;"><<i>{{ task_name }}</i>></span>
+</h2>
+<p>Result: <b>{{ result }}</b></p>
+{% if not status %}
+  <p>Task still executing...</p>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Celery demo math tasks</title>
+  <style>
+    li {
+      margin: 1rem;
+    }
+  </style>
+</head>
+<body>
+<h2>Page to demonstration math tasks</h2>
+
+<ul>
+  <li>
+    <h4>Addition task</h4>
+    <form action="{% url 'math:add-request' %}" method="post">
+      {% csrf_token %}
+      <input name="x" type="number"/> + <input name="y" type="number"/>
+      <button>Calculate</button>
+    </form>
+  </li>
+
+  <li>
+    <h4>Subtraction task</h4>
+    <form action="{% url 'math:sub-request' %}" method="post">
+      {% csrf_token %}
+      <input name="x" type="number"/> - <input name="y" type="number"/>
+      <button>Calculate</button>
+    </form>
+  </li>
+
+  <li>
+    <h4>Multiplication task</h4>
+    <form action="{% url 'math:mul-request' %}" method="post">
+      {% csrf_token %}
+      <input name="x" type="number"/> * <input name="y" type="number"/>
+      <button>Calculate</button>
+    </form>
+  </li>
+
+  <li>
+    <h4>Division task</h4>
+    <form action="{% url 'math:divide-request' %}" method="post">
+      {% csrf_token %}
+      <input name="x" type="number"/> / <input name="y" type="number"/>
+      <button>Calculate</button>
+    </form>
+  </li>
+
+  <li>
+    <h4>Sum of several numbers task</h4>
+    <form action="{% url 'math:xsum-request' %}" method="post">
+      {% csrf_token %}
+      <input name="numbers" type="text" placeholder="1 2 3 4 5 6"/>
+      <button>Calculate</button>
+    </form>
+
+  </li>
+</ul>
+
+</body>
+</html>

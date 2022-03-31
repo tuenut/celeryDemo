@@ -34,4 +34,31 @@ python3 manage.py startapp notification
 python3 manage.py startapp math_demo
 ```
 
+### Create tasks
 Now let's move our code from standalone demo to django demo...
+
+### Create views
+Next we write some views and templates to create UI and visualize results for 
+math_demo.
+
+Run django dev server and in other console run celery worker. 
+Make sure the redis server is running on 127.0.0.1.
+```shell
+python3 manage.py runserver 127.0.0.1:8000
+celery -A celery_demo worker --loglevel=info
+```
+> In that case we run celery worker for default queue. Due to our math tasks 
+> has no routing, it will be handled by that worker.
+
+Now open http://127.0.0.1:8000/math/ in your browser and try to perform some 
+requests on page. You will get results of operations after you click on button
+`Calculate`. 
+
+Next stop celery worker and try again. After one second waiting you will get 
+message on page `Task still executing...` and result is None. That happens 
+because task was putted in queue, but no worker executed it. Now if you run 
+celery worker again, you will see in console, that worker found a task and 
+executed it. Update your result page and you get task result.
+
+On next step we run our app with docker-compose, and we will be testing other 
+tasks, routed to separated queues.
