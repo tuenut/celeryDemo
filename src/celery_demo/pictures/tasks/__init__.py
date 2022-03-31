@@ -1,13 +1,14 @@
 from loguru import logger
 
-from libs.imagecompress import compress_jpeg
-from tasks.celery import app
+from celery import shared_task
+
+from .utils import compress_jpeg
 
 
 __all__ = ["compress_image"]
 
 
-@app.task
+@shared_task
 def compress_image(path_to_file: str):
     logger.info(f"Run compress image task for file <{path_to_file}>.")
 

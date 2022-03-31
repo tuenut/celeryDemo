@@ -1,7 +1,8 @@
 from loguru import logger
 
-from tasks.celery import app
-from libs.math import add, sub, mul, divide, xsum
+from celery import shared_task
+
+from .utils import add, sub, mul, divide, xsum
 
 
 __all__ = [
@@ -10,7 +11,7 @@ __all__ = [
 ]
 
 
-@app.task
+@shared_task
 def add_request(x, y):
     logger.info(f"User request adding <{x}> to <{y}>.")
 
@@ -21,7 +22,7 @@ def add_request(x, y):
     return result
 
 
-@app.task
+@shared_task
 def sub_request(x, y):
     logger.info(f"User request subtract <{y}> from <{x}>.")
 
@@ -32,7 +33,7 @@ def sub_request(x, y):
     return result
 
 
-@app.task
+@shared_task
 def mul_request(x, y):
     logger.info(f"User request multiply <{x}> by <{y}>.")
 
@@ -43,7 +44,7 @@ def mul_request(x, y):
     return result
 
 
-@app.task
+@shared_task
 def divide_request(x, y):
     logger.info(f"User request divide <{x}> into <{y}>.")
 
@@ -54,7 +55,7 @@ def divide_request(x, y):
     return result
 
 
-@app.task
+@shared_task
 def xsum_request(numbers):
     logger.info(f"User request summarize <{numbers}>.")
 

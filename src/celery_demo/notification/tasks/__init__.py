@@ -1,13 +1,14 @@
 from loguru import logger
 
-from libs.requests import request
-from tasks.celery import app
+from celery import shared_task
 
 
 __all__ = ["notify_user_in_slack"]
 
+from libs.requests import request
 
-@app.task
+
+@shared_task
 @logger.catch(
     reraise=True,
     message="Something goes wrong while `notify_user_in_slack` task execution."
