@@ -9,8 +9,8 @@ CELERY_ENABLE_UTC = True
 CELERY_RESULT_EXPIRES = 360
 CELERY_TASK_DEFAULT_QUEUE = 'default'
 CELERY_TASK_ROUTES = {
-    "tasks.datahandle.*": "datahandle",
-    "tasks.datasource.*": "datasource",
-    "tasks.notification.*": "notification"
+    "datahandle.tasks.*": "datahandle",
+    "datasource.tasks.*": "datasource",
+    "notification.tasks.*": "notification"
 }
 CELERY_RESULT_EXTENDED = True

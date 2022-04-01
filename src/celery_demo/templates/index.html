@@ -7,6 +7,24 @@
 <body>
 <ul>
   <li><a href="{% url 'math:main-page' %}">Math demo</a></li>
+  <ul>
+    <li>
+      <a href="#">Get weather</a>
+    </li>
+    <li>
+      <a href="#">Compress image</a>
+    </li>
+    <li>
+      <form action="{% url 'notify:send' %}" method="post">
+        {% csrf_token %}
+        <input placeholder="Bob" name="user" type="text"/>
+        <button>
+          Notify
+        </button>
+      </form>
+    </li>
+  </ul>
 </ul>
+
 </body>
 </html>

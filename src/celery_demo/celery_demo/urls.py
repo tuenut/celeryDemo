@@ -26,5 +26,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("", index, name="index"),
     path("math/", include("math_demo.urls", namespace="math")),
+    path("notify/", include("notification.urls", namespace="notify"))
     # path("notification/", include("notification.urls", namespace="notify")),
 ]
