@@ -1,6 +1,7 @@
 from loguru import logger
 
-from celery import shared_task
+from celery_demo.celery import app
+from libs.logging import Logged
 
 
 __all__ = ["notify_user_in_slack"]
@@ -8,14 +9,18 @@ __all__ = ["notify_user_in_slack"]
 from libs.requests import request
 
 
-@shared_task
-@logger.catch(
-    reraise=True,
-    message="Something goes wrong while `notify_user_in_slack` task execution."
-)
-def notify_user_in_slack(user):
-    logger.info(f"Start sending notification to slack for user <{user}>.")
+@Logged.decorate
+class UserNotificationTask(app.Task):
+    @logger.catch(
+        reraise=True,
+        message="Something goes wrong while `notify_user_in_slack` task execution."
+    )
+    def run(self, user):
+        logger.info(f"Start sending notification to slack for user <{user}>.")
 
-    request()
+        request()
 
-    logger.info("Task completed.")
+        logger.info("Task completed.")
+
+
+notify_user_in_slack = app.register_task(UserNotificationTask())

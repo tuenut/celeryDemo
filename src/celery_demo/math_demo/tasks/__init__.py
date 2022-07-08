@@ -1,6 +1,7 @@
 from loguru import logger
 
 from celery import shared_task
+from libs.logging import Logged
 
 from .utils import add, sub, mul, divide, xsum
 
@@ -11,8 +12,9 @@ __all__ = [
 ]
 
 
-@shared_task
-def add_request(x, y):
+@shared_task(bind=True)
+@Logged.decorate
+def add_request(self, x, y):
     logger.info(f"User request adding <{x}> to <{y}>.")
 
     result = add(x, y)
