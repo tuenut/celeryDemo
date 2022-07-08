@@ -1,64 +1,103 @@
 import os
-import sys
 
 from loguru import logger
 from django.http.request import HttpRequest
 from django.conf import settings
+from django.utils.decorators import method_decorator, partial
 
 from celery.app.task import Task
 
-from functools import update_wrapper
+from inspect import isclass
+from functools import wraps
 
 
 class Logged:
-    __decorated = {}
     __configured = False
 
     @classmethod
     def decorate(cls, obj):
-        object_path = cls.get_path_name(obj)
-        if object_path not in cls.__decorated:
-            cls.__decorated[object_path] = cls(obj)
-
-        return cls.__decorated[object_path]
-
-    def __init__(self, obj):
-        self._object = obj
-        update_wrapper(self, obj)
-
-    def __call__(self, *args, **kwargs):
-        logger.debug(f"self={self}")
-        logger.debug(f"args=<{args}>; kwargs=<{kwargs}>")
-
-        if isinstance(args[0], Task):
-            return self._call_functional_task(*args, **kwargs)
-        elif isinstance(self._object, Task):
-            return self._call_class_task(*args, **kwargs)
-        elif isinstance(args[0], HttpRequest):
-            return self._call_view(*args, **kwargs)
+        logger.debug(f"Get object to logger decoration: {obj}")
+        if isclass(obj):
+            return cls._get_class_wrapper(obj)
         else:
-            return self._call_default(*args, **kwargs)
+            return cls._get_functional_wrapper(obj)
 
     @staticmethod
     def get_path_name(obj):
         return f"{obj.__module__}.{obj.__name__}"
 
-    def _call_functional_task(self, task, *args, **kwargs):
-        with logger.contextualize(task_id=task.request.id):
-            return self._object(task, *args, **kwargs)
+    @classmethod
+    def _get_functional_wrapper(cls, fn_object):
+        logger.debug(f"Decorate {fn_object} as function-object.")
 
-    def _call_class_task(self, *args, **kwargs):
-        instance = self._object(*args, **kwargs)
+        @wraps(fn_object)
+        def wrapper(*args, **kwargs):
+            if args and isinstance(args[0], Task):
+                return cls._call_functional_task(fn_object, *args, **kwargs)
+
+            elif args and isinstance(args[0], HttpRequest):
+                return cls._call_view(fn_object, *args, **kwargs)
+
+            else:
+                return cls._default_call(fn_object, *args, **kwargs)
+
+        return wrapper
+
+    @classmethod
+    def _get_class_wrapper(cls, klass):
+        logger.debug(f"Decorate {klass} as class-object.")
+
+        if issubclass(klass, Task):
+            logger.debug(f"Decorate as celery Task.")
+
+            @wraps(klass)
+            def klass_wrapper(*args, **kwargs):
+                _partial_call = partial(cls._call_functional_task, klass.run)
+                logger.debug(f"Got partial functional caller for `run` method: {_partial_call}")
+
+                _run_decorator = method_decorator(name="run", decorator=_partial_call)
+                logger.debug(f"Got method decorator for `run` method: {_run_decorator}")
+
+                _klass = _run_decorator(klass)
+                logger.debug(f"Got decorated Task class: {_klass}")
+
+                task_instance = _klass(*args, **kwargs)
+                logger.debug(f"Got decorated class instance: {task_instance}")
+
+                return task_instance
+
+            return klass_wrapper
+
+        else:
+            logger.debug("Decorate class with default caller.")
+
+            @wraps(klass)
+            def wrapper(*args, **kwargs):
+                return cls._default_call(*args, **kwargs)
+
+            return wrapper
+
+    @staticmethod
+    def _call_functional_task(task_function, task, *args, **kwargs):
+        with logger.contextualize(task_id=task.request.id):
+            return task_function(task, *args, **kwargs)
+
+    @staticmethod
+    def _call_task_class(task_klass, *args, **kwargs):
+        instance = task_klass(*args, **kwargs)
+
         with logger.contextualize(task_id=instance.request.id):
             return instance
 
-    def _call_view(self, request, *args, **kwargs):
+    @staticmethod
+    def _call_view(view, request, *args, **kwargs):
         with logger.contextualize(is_view=True):
-            return self._object(request, *args, **kwargs)
+            return view(request, *args, **kwargs)
 
-    def _call_default(self, *args, **kwargs):
+    @staticmethod
+    def _default_call(obj, *args, **kwargs):
         with logger.contextualize(default=True):
-            return self._object(*args, **kwargs)
+            return obj(*args, **kwargs)
 
     @staticmethod
     def _default_log_filter(record: dict) -> bool:
@@ -92,29 +131,22 @@ class Logged:
 
         logger.info("Configuring logger...")
 
-        # logger.remove()
-        # logger.add(
-        #     sys.stderr,
-        #     level="DEBUG",
-        #     backtrace=False,
-        #     serialize=True
-        # )
         os.makedirs(settings.LOG_DIR, exist_ok=True)
 
-        logger.add(
-            settings.LOG_DIR / "default.log",
-            format="{time} {level} {message}",
-            level=settings.LOG_LEVEL,
-            backtrace=False,
-            filter=cls._default_log_filter,
-            serialize=True
-        )
         logger.add(
             settings.LOG_DIR / "_.log",
             format="{time} {level} {message}",
             level=settings.LOG_LEVEL,
             backtrace=False,
             filter=cls.fallback_log_filter,
+            serialize=True
+        )
+        logger.add(
+            settings.LOG_DIR / "default.log",
+            format="{time} {level} {message}",
+            level=settings.LOG_LEVEL,
+            backtrace=False,
+            filter=cls._default_log_filter,
             serialize=True
         )
         logger.add(
@@ -137,7 +169,4 @@ class Logged:
         cls.__configured = True
 
 
-
 Logged._configure_logger()
-
-

@@ -24,8 +24,9 @@ def add_request(self, x, y):
     return result
 
 
-@shared_task
-def sub_request(x, y):
+@shared_task(bind=True)
+@Logged.decorate
+def sub_request(self, x, y):
     logger.info(f"User request subtract <{x}> from <{y}>.")
 
     result = sub(x, y)
