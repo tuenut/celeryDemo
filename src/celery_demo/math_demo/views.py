@@ -2,7 +2,7 @@ from loguru import logger
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_POST, require_GET
 
-from libs.logging import Logged
+from libs.logging import LoggerContext
 from libs.tasks import get_task_result
 from .tasks import (
     add_request, sub_request, mul_request, divide_request, xsum_request
@@ -16,7 +16,7 @@ __all__ = [
 
 
 @require_GET
-@Logged.decorate
+@LoggerContext.decorate
 def main_page(request):
     logger.info("Hello there!")
     return render(request, template_name="math/index.html")

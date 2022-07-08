@@ -1,7 +1,8 @@
 from loguru import logger
 
+
 from celery_demo.celery import app
-from libs.logging import Logged
+from libs.logging import LoggerContext
 
 
 __all__ = ["notify_user_in_slack"]
@@ -9,7 +10,7 @@ __all__ = ["notify_user_in_slack"]
 from libs.requests import request
 
 
-@Logged.decorate
+@LoggerContext
 class UserNotificationTask(app.Task):
     @logger.catch(
         reraise=True,

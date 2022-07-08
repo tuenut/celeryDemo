@@ -1,172 +1,157 @@
-import os
+import os, sys
+from inspect import isclass
+
+from typing import Type
+
+from uuid import uuid4
 
 from loguru import logger
 from django.http.request import HttpRequest
 from django.conf import settings
-from django.utils.decorators import method_decorator, partial
 
 from celery.app.task import Task
 
-from inspect import isclass
-from functools import wraps
+from functools import wraps, update_wrapper
 
 
-class Logged:
-    __configured = False
+def get_path_name(obj):
+    """Can be used to log into separated files each logged object"""
+    return f"{obj.__module__}.{obj.__name__}"
+
+
+def _view_log_filter(record: dict) -> bool:
+    return "request_id" in record["extra"]
+
+
+def _task_log_filter(record: dict) -> bool:
+    return "task_id" in record["extra"]
+
+
+def _fallback_log_filter(record: dict) -> bool:
+    filters = [_view_log_filter, _task_log_filter]
+    return all(map(lambda method: not method(record), filters))
+
+
+logger.info("Configuring logger...")
+logger.remove()
+
+os.makedirs(settings.LOG_DIR, exist_ok=True)
+
+logger.add(
+    settings.LOG_DIR / "default.log",
+    level=settings.LOG_LEVEL,
+    backtrace=False,
+    filter=_fallback_log_filter,
+    serialize=True
+)
+logger.add(
+    sys.stderr,
+    format="{time} {level} {message}",
+    level=settings.LOG_LEVEL,
+    backtrace=False,
+    filter=_fallback_log_filter,
+)
+
+logger.add(
+    settings.LOG_DIR / "tasks.log",
+    level=settings.LOG_LEVEL,
+    backtrace=False,
+    filter=_task_log_filter,
+    serialize=True
+)
+logger.add(
+    sys.stderr,
+    format="{time} {level} | {extra[task_id]} | {message}",
+    level=settings.LOG_LEVEL,
+    backtrace=False,
+    filter=_task_log_filter,
+)
+
+logger.add(
+    settings.LOG_DIR / "views.log",
+    level=settings.LOG_LEVEL,
+    backtrace=False,
+    filter=_view_log_filter,
+    serialize=True
+)
+logger.add(
+    sys.stderr,
+    format="{time} {level} | {extra[request_id]} | {message}",
+    level=settings.LOG_LEVEL,
+    backtrace=False,
+    filter=_view_log_filter,
+)
+
+
+class LoggerContext:
+    """
+    Should add logger context to:
+     - django functional views
+     - django class-based views
+     - celery functional bounded tasks
+     - celery class-based tasks
+
+     Class-based decorator not works with celery functional bounded tasks.
+      Seems like kwargs for @shared_task(bind=True) ignored, or somehow `self`
+      not passed to class-based decorator instance __call__.
+    """
+
+    def __init__(self, obj):
+        self._object = obj
+        self._decorated = self.decorate(obj)
+
+        update_wrapper(self, obj)
+
+    def __call__(self, *args, **kwargs):
+        return self._decorated(*args, **kwargs)
 
     @classmethod
     def decorate(cls, obj):
-        logger.debug(f"Get object to logger decoration: {obj}")
-        if isclass(obj):
-            return cls._get_class_wrapper(obj)
+        if isclass(obj) and issubclass(obj, Task):
+            return cls._decorate_klass_task(obj)
         else:
-            return cls._get_functional_wrapper(obj)
-
-    @staticmethod
-    def get_path_name(obj):
-        return f"{obj.__module__}.{obj.__name__}"
+            return cls._decorate_function(obj)
 
     @classmethod
-    def _get_functional_wrapper(cls, fn_object):
-        logger.debug(f"Decorate {fn_object} as function-object.")
+    def _decorate_klass_task(cls, klass: Type[Task]):
+        @wraps(klass)
+        def klass_wrapper(*args, **kwargs):
+            instance = klass(*args, **kwargs)
+            run_method = instance.run
 
-        @wraps(fn_object)
+            @wraps(run_method)
+            def run_wrapper(*method_args, **method_kwargs):
+                return cls.__call_functional_task(
+                    run_method, instance, *args, **kwargs
+                )
+
+            instance.run = run_wrapper
+
+            return instance
+
+        return klass_wrapper
+
+    @classmethod
+    def _decorate_function(cls, fn):
+        @wraps(fn)
         def wrapper(*args, **kwargs):
             if args and isinstance(args[0], Task):
-                return cls._call_functional_task(fn_object, *args, **kwargs)
+                return cls.__call_functional_task(fn, *args, **kwargs)
 
             elif args and isinstance(args[0], HttpRequest):
-                return cls._call_view(fn_object, *args, **kwargs)
+                return cls.__call_view(fn, *args, **kwargs)
 
             else:
-                return cls._default_call(fn_object, *args, **kwargs)
+                return fn(*args, **kwargs)
 
         return wrapper
 
-    @classmethod
-    def _get_class_wrapper(cls, klass):
-        logger.debug(f"Decorate {klass} as class-object.")
-
-        if issubclass(klass, Task):
-            logger.debug(f"Decorate as celery Task.")
-
-            @wraps(klass)
-            def klass_wrapper(*args, **kwargs):
-                _partial_call = partial(cls._call_functional_task, klass.run)
-                logger.debug(f"Got partial functional caller for `run` method: {_partial_call}")
-
-                _run_decorator = method_decorator(name="run", decorator=_partial_call)
-                logger.debug(f"Got method decorator for `run` method: {_run_decorator}")
-
-                _klass = _run_decorator(klass)
-                logger.debug(f"Got decorated Task class: {_klass}")
-
-                task_instance = _klass(*args, **kwargs)
-                logger.debug(f"Got decorated class instance: {task_instance}")
-
-                return task_instance
-
-            return klass_wrapper
-
-        else:
-            logger.debug("Decorate class with default caller.")
-
-            @wraps(klass)
-            def wrapper(*args, **kwargs):
-                return cls._default_call(*args, **kwargs)
-
-            return wrapper
+    @staticmethod
+    def __call_functional_task(fn, self: Task, *args, **kwargs):
+        with logger.contextualize(task_id=self.request.id):
+            return fn(self, *args, **kwargs)
 
     @staticmethod
-    def _call_functional_task(task_function, task, *args, **kwargs):
-        with logger.contextualize(task_id=task.request.id):
-            return task_function(task, *args, **kwargs)
-
-    @staticmethod
-    def _call_task_class(task_klass, *args, **kwargs):
-        instance = task_klass(*args, **kwargs)
-
-        with logger.contextualize(task_id=instance.request.id):
-            return instance
-
-    @staticmethod
-    def _call_view(view, request, *args, **kwargs):
-        with logger.contextualize(is_view=True):
+    def __call_view(view, request: HttpRequest, *args, **kwargs):
+        with logger.contextualize(request_id=uuid4()):
             return view(request, *args, **kwargs)
-
-    @staticmethod
-    def _default_call(obj, *args, **kwargs):
-        with logger.contextualize(default=True):
-            return obj(*args, **kwargs)
-
-    @staticmethod
-    def _default_log_filter(record: dict) -> bool:
-        return record["extra"].get("default", False)
-
-    @staticmethod
-    def _task_log_filter(record: dict) -> bool:
-        return "task_id" in record["extra"]
-
-    @staticmethod
-    def _view_log_filter(record: dict) -> bool:
-        return record["extra"].get("is_view", False)
-
-    @classmethod
-    def fallback_log_filter(cls, record: dict) -> bool:
-        filters = [
-            log_filter_method
-            for log_filter_method in dir(cls)
-            if (log_filter_method.startswith("_") and
-                log_filter_method.endswith("log_filter"))
-        ]
-        return all(map(
-            lambda method_name: not getattr(cls, method_name)(record),
-            filters
-        ))
-
-    @classmethod
-    def _configure_logger(cls):
-        if cls.__configured:
-            return
-
-        logger.info("Configuring logger...")
-
-        os.makedirs(settings.LOG_DIR, exist_ok=True)
-
-        logger.add(
-            settings.LOG_DIR / "_.log",
-            format="{time} {level} {message}",
-            level=settings.LOG_LEVEL,
-            backtrace=False,
-            filter=cls.fallback_log_filter,
-            serialize=True
-        )
-        logger.add(
-            settings.LOG_DIR / "default.log",
-            format="{time} {level} {message}",
-            level=settings.LOG_LEVEL,
-            backtrace=False,
-            filter=cls._default_log_filter,
-            serialize=True
-        )
-        logger.add(
-            settings.LOG_DIR / "tasks.log",
-            format="{time} {level} | {extra[task_id]} | {message}",
-            level=settings.LOG_LEVEL,
-            backtrace=False,
-            filter=cls._task_log_filter,
-            serialize=True
-        )
-        logger.add(
-            settings.LOG_DIR / "views.log",
-            format="{time} {level} | view={extra[is_view]} | {message}",
-            level=settings.LOG_LEVEL,
-            backtrace=False,
-            filter=cls._view_log_filter,
-            serialize=True
-        )
-
-        cls.__configured = True
-
-
-Logged._configure_logger()
