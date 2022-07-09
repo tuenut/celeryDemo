@@ -11,13 +11,12 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
+from .paths import BASE_DIR, LOG_DIR
 from .celeryconfig import *
+from .logging import *
 
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-LOG_DIR = Path("/tmp/celery.experiments/logs/")
-LOG_LEVEL = "DEBUG"
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/

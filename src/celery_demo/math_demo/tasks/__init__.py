@@ -25,7 +25,7 @@ def add_request(self, x, y):
 
 
 @shared_task(bind=True)
-@LoggerContext
+@LoggerContext.decorate
 def sub_request(self, x, y):
     logger.info(f"User request subtract <{x}> from <{y}>.")
 

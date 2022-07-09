@@ -10,7 +10,7 @@ __all__ = ["notify_user_in_slack"]
 from libs.requests import request
 
 
-@LoggerContext
+@LoggerContext.decorate
 class UserNotificationTask(app.Task):
     @logger.catch(
         reraise=True,
