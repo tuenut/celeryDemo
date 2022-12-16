@@ -1,27 +1,29 @@
-version: "3"
+version: "3.8"
 
 services:
   redis:
     image: redis:6.2-alpine
   web-app:
-    image: celery.experiments:latest
-    build: ./
-    entrypoint: uwsgi --ini uwsgi.ini
+    image: celery.experiments/webapp
+    build:
+      context: ./
+      target: webapp
     ports:
       - "127.0.0.1:8000:8000"
-  datahandle-workers:
-    image: celery.experiments:latest
-    build: ./
-    entrypoint: celery -A celery_demo.celery worker --loglevel=info --workdir /opt/app/ -Q datahandle
-  datasource-workers:
-    image: celery.experiments:latest
-    build: ./
-    entrypoint: celery -A celery_demo.celery worker --loglevel=info --workdir /opt/app/ -Q datasource
-  notification-workers:
-    image: celery.experiments:latest
-    build: ./
-    entrypoint: celery -A celery_demo.celery worker --loglevel=info --workdir /opt/app/ -Q notification
-  default-queue:
-    image: celery.experiments:latest
-    build: ./
-    entrypoint: celery -A celery_demo.celery worker --loglevel=info --workdir /opt/app/
+  worker-default:
+    image: celery.experiments/worker
+    build:
+      context: ./
+      target: worker
+  worker-datasource:
+    image: celery.experiments/worker
+    environment:
+      WORKER_QUEUE_NAME: datasource
+  worker-datahandle:
+    image: celery.experiments/worker
+    environment:
+      WORKER_QUEUE_NAME: datahandle
+  worker-notification:
+    image: celery.experiments/worker
+    environment:
+      WORKER_QUEUE_NAME: notification
